@@ -56,3 +56,6 @@ sudo service octopicontrolpanel {start|stop|restart}
 
 ## Attributions ##
 PygButton courtesy of Al Sweigart (al@inventwithpython.com)
+
+####Master branch build status: 
+![](https://travis-ci.org/mcecchi/OctoPiControlPanel.svg?branch=master)
