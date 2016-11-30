@@ -80,7 +80,7 @@ class OctoPiClient:
         self.send_request(url, data, headers)
 
     def send_request(self, url, data, headers):
-        requests.post(url, data=json.dumps(data), headers=headers, timeout=0.2)
+        requests.post(url, data=json.dumps(data), headers=headers, timeout=5.0)
         print "Request done. URL: " + url + " Data: " + json.dumps(data)
         return
 

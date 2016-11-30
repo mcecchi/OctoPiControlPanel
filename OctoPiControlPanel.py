@@ -7,22 +7,22 @@ __author__ = "Mauro Cecchi"
 __license__ = "GNU AFFERO GENERAL PUBLIC LICENSE"
 
 import os
-import pygame
-from pygame.locals import *
-import pygbutton
 import platform
-import time
-from threading import Thread
-from cyrusbus import Bus
 
+import pygame
+from cyrusbus import Bus
+from pygame.locals import *
+
+import pygbutton
+from client import OctoPiClient
 from config import OctoPiControlPanelConfig
 from printer import Printer
-from client import OctoPiClient
+from views.controlview import ControlView
 from views.dashboardview import DashboardView
+from views.graphview import GraphView
 from views.menuview import MenuView
 from views.settingsview import SettingsView
-from views.controlview import ControlView
-from views.graphview import GraphView
+
 
 class OctoPiControlPanel():
     """
@@ -45,7 +45,8 @@ class OctoPiControlPanel():
 
         self.background_image = pygame.image.load(os.path.join(self.config.script_directory, 'assets/background.png'))
         self.menu_button_image = os.path.join(self.config.script_directory, 'assets/button-menu.png')
-        self.temperature_icon = pygame.image.load(os.path.join(self.config.script_directory, 'assets/icon-temperature.png'))
+        self.temperature_icon = pygame.image.load(
+            os.path.join(self.config.script_directory, 'assets/icon-temperature.png'))
 
         self.menu = MenuView(self.config, self.bus)
 
@@ -65,9 +66,9 @@ class OctoPiControlPanel():
         if platform.system() == 'Linux':
             # Init framebuffer/touchscreen environment variables
             os.putenv('SDL_VIDEODRIVER', 'fbcon')
-            os.putenv('SDL_FBDEV'      , '/dev/fb1')
-            os.putenv('SDL_MOUSEDRV'   , 'TSLIB')
-            os.putenv('SDL_MOUSEDEV'   , '/dev/input/touchscreen')
+            os.putenv('SDL_FBDEV', '/dev/fb1')
+            os.putenv('SDL_MOUSEDRV', 'TSLIB')
+            os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
 
         # init pygame and set up screen
         pygame.init()
@@ -81,7 +82,8 @@ class OctoPiControlPanel():
 
         # Set font
         self.fntText = pygame.font.Font(os.path.join(self.config.script_directory, "assets/Roboto-Regular.ttf"), 12)
-        self.fntTextSmall = pygame.font.Font(os.path.join(self.config.script_directory, "assets/Roboto-Regular.ttf"), 10)
+        self.fntTextSmall = pygame.font.Font(os.path.join(self.config.script_directory, "assets/Roboto-Regular.ttf"),
+                                             10)
         self.percent_txt = pygame.font.Font(os.path.join(self.config.script_directory, "assets/Roboto-Regular.ttf"), 30)
 
         # backlight on off status and control
@@ -90,7 +92,7 @@ class OctoPiControlPanel():
 
         self.clock = pygame.time.Clock()
 
-        self.btnMenu = pygbutton.PygButton((260,  0, 40, 40), normal=self.menu_button_image)
+        self.btnMenu = pygbutton.PygButton((260, 0, 40, 40), normal=self.menu_button_image)
 
         # I couldnt seem to get at pin 252 for the backlight using the usual method, 
         # but this seems to work
@@ -107,11 +109,11 @@ class OctoPiControlPanel():
         print "OctoPiControlPanel started!"
         print "---"
 
-        #self.thread = Thread(target=self.state_thread)
-        #self.thread.start()
+        # self.thread = Thread(target=self.state_thread)
+        # self.thread.start()
 
         # Set status interval
-        pygame.time.set_timer(USEREVENT +1, self.config.updatetime)
+        pygame.time.set_timer(USEREVENT + 1, self.config.updatetime)
 
         """ game loop: input, move, render"""
         while not self.done:
@@ -175,28 +177,30 @@ class OctoPiControlPanel():
                     print "Background light on."
 
             # Handle status update
-            if event.type == USEREVENT +1:
+            if event.type == USEREVENT + 1:
                 self.state_thread()
                 print "State update..."
+
     """
     Get status update from API, regarding temp etc.
     """
+
     def state_thread(self):
-        #while not self.done:
+        # while not self.done:
         self.octopi_client.get_printer_status(self.printer)
         self.octopi_client.get_job_status(self.printer)
         self.octopi_client.get_connection_status(self.printer)
 
-            #time.sleep(self.config.updatetime / 1000.0)
+        # time.sleep(self.config.updatetime / 1000.0)
 
     def draw(self):
         self.clock.tick(30)
 
-        #clear whole screen
+        # clear whole screen
         self.screen.blit(self.background_image, (0, 0))
 
         # render print progress background shade
-        s = pygame.Surface((320*self.printer.Completion/100, 240), pygame.SRCALPHA)
+        s = pygame.Surface((320 * self.printer.Completion / 100, 240), pygame.SRCALPHA)
         s.fill((0, 0, 0, 160))
         self.screen.blit(s, (0, 0))
 
@@ -211,9 +215,14 @@ class OctoPiControlPanel():
 
         # Draw status bar
         self.screen.blit(self.temperature_icon, (0, 200))
-        hot_end_label = self.fntText.render(u'Hot end: {0}\N{DEGREE SIGN}C ({1}\N{DEGREE SIGN}C)'.format(self.printer.HotEndTemp, self.printer.HotEndTempTarget), 1, (255, 255, 255))
+        hot_end_label = self.fntText.render(
+            u'Hot end: {0}\N{DEGREE SIGN}C ({1}\N{DEGREE SIGN}C)'.format(self.printer.HotEndTemp,
+                                                                         self.printer.HotEndTempTarget), 1,
+            (255, 255, 255))
         self.screen.blit(hot_end_label, (40, 205))
-        bed_temp_label = self.fntText.render(u'Bed: {0}\N{DEGREE SIGN}C ({1}\N{DEGREE SIGN}C)'.format(self.printer.BedTemp, self.printer.BedTempTarget), 1, (255, 255, 255))
+        bed_temp_label = self.fntText.render(
+            u'Bed: {0}\N{DEGREE SIGN}C ({1}\N{DEGREE SIGN}C)'.format(self.printer.BedTemp, self.printer.BedTempTarget),
+            1, (255, 255, 255))
         self.screen.blit(bed_temp_label, (40, 220))
 
         completion_label = self.percent_txt.render("{0:.1f}%".format(self.printer.Completion), 1, (255, 255, 255))
@@ -249,8 +258,8 @@ class OctoPiControlPanel():
 
         return
 
+
 if __name__ == '__main__':
     config = OctoPiControlPanelConfig.load_from_file()
-
     opp = OctoPiControlPanel(config)
     opp.start()
